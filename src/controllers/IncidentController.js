@@ -40,16 +40,31 @@ module.exports = {
     const { id } = request.params;
     const ong_id = request.headers.authorization;
 
-    const incident = await connection('incidents')
-      .where('id', id)
-      .select('ong_id')
-      .first();
+
+    let incident = null;
+
+    try {
+      incident = await connection('incidents')
+        .where('id', id)
+        .select('ong_id')
+        .first();
+    } catch (err) {
+      return response.status(500).json({ error: 'Internal server error'} );
+    }
+
+    if (!incident) {
+      return response.status(404).json({ error: 'Incident not found' });
+    }
 
     if (incident.ong_id !== ong_id) {
       return response.status(401).json({ error: 'Operation not permitted.' });        
     }
 
-    await connection('incidents').where('id', id).delete();
+    try {
+      await connection('incidents').where('id', id).delete();
+    } catch (err) {
+      return response.status(500).json({ error: 'Internal server error'} );
+    }
 
     return response.status(204).send();
   }
